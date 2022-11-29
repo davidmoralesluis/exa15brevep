@@ -5,13 +5,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException {//Fecha en 28-8-1984
         Connection conn = Conexion();
 //        crearTablas(conn);
-        //exe(conn);
-        leerPlatoss();
+        exe(conn);
         conn.close();
     }
 
@@ -21,8 +21,8 @@ public class Main {
         String host = "//localhost:"; // tamen poderia ser una ip como "192.168.1.14"
         String porto = "5432";
         String sid = "postgres";
-        String usuario = "davidmoralesluis";
-        String password = "";
+        String usuario = "dam2a";
+        String password = "castelao";
         String url = driver + host+ porto + "/" + sid;
         try {
             conn = DriverManager.getConnection(url,usuario,password);
@@ -33,60 +33,43 @@ public class Main {
         return conn;
     }
 
-    static void leerPlatoss() throws IOException, ClassNotFoundException {
+
+
+    public static void exe(Connection connection)throws IOException, ClassNotFoundException{
+        ResultSet rs = null;
+        String codp=null;
+        String nomep="";
+        float graxaTotal=0;
+        int peso;
+        int graxa;
         File ficheiro=new File(System.getProperty("user.dir")+"/src/main/java/exa15brevep/platoss");
-
-//        ObjectOutputStream obxWrite=new ObjectOutputStream(new FileOutputStream(ficheiro));
         ObjectInputStream obxRead=new ObjectInputStream(new FileInputStream(ficheiro));
-
 
         Platos p=null;
         while ((p=(Platos)obxRead.readObject())!=null){
-            System.out.println(p);
+            try {
+
+                rs = connection.createStatement().executeQuery("select codp,graxa, peso from componentes right JOIN composicion ON componentes.codc = composicion.codc where codp='"+p.getCodigop()+"';");
+                while(rs.next()){
+
+                    codp=rs.getString(1);
+                    graxa=rs.getInt(2);
+                    peso=rs.getInt(3);
+
+                    graxaTotal+=peso/100*graxa;
+                }
+                System.out.print("\n"+codp+"\n"+p.getNomep()+"\n"+"grasas Total: "+graxaTotal+"\n");
+                nomep="";
+                graxaTotal=0;
+
+
+                rs.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
         obxRead.close();
-    }
-    public static void exe(Connection connection){
-        ResultSet rs = null;
-        String codp=null;
-        String nomep="",nomep1="",nomep2="",nomep3="",nomep4="";
-        float graxaTotal1=0,graxaTotal2=0,graxaTotal3=0,graxaTotal4 =0;
-        int peso;
-        int graxa;
-        try {
-            rs = connection.createStatement().executeQuery("select codp,nomec,graxa, peso from componentes right JOIN composicion ON componentes.codc = composicion.codc;");
-            while(rs.next()){
-                codp=rs.getString(1);
-                nomep=rs.getString(2);
-                graxa=rs.getInt(3);
-                peso=rs.getInt(4);
-                if(codp.equalsIgnoreCase("p1")){
-                    nomep1=nomep1+nomep+" ";
-                    graxaTotal1+=peso/100*graxa;
-                }
-                if(codp.equalsIgnoreCase("p2")){
-                    nomep2=nomep2+nomep+" ";
-                    graxaTotal2+=peso/100*graxa;
-                }
-                if(codp.equalsIgnoreCase("p3")){
-                    nomep3=nomep3+nomep+" ";
-                    graxaTotal3+=peso/100*graxa;
-                }
-                if(codp.equalsIgnoreCase("p4")){
-                    nomep4=nomep4+nomep+" ";
-                    graxaTotal4+=peso/100*graxa;
-                }
 
-            }
-
-            System.out.print("\nP1\n"+nomep1+"\n"+"grasas Total: "+graxaTotal1);
-            System.out.print("\nP2\n"+nomep2+"\n"+"grasas Total: "+graxaTotal2);
-            System.out.print("\nP3\n"+nomep3+"\n"+"grasas Total: "+graxaTotal3);
-            System.out.print("\nP4\n"+nomep4+"\n"+"grasas Total: "+graxaTotal4);
-            rs.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 
